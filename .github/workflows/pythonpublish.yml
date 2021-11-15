@@ -1,6 +1,12 @@
 name: Upload Python Package
 
 on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
   release:
     types: [published]
   workflow_dispatch:
@@ -24,9 +30,9 @@ jobs:
         python -m pip install build twine
         python -m pip list
 
-    - name: Build a sdist
+    - name: Build a wheel and a sdist
       run: |
-        python -m build --sdist .
+        python -m build .
 
     - name: Verify the distribution
       run: twine check dist/*
@@ -34,8 +40,13 @@ jobs:
     - name: List contents of sdist
       run: python -m tarfile --list dist/panda-client-*.tar.gz
 
+    - name: List contents of wheel
+      run: python -m zipfile --list dist/panda_client-*.whl
+
     - name: Publish distribution to PyPI
       if: github.event_name == 'release' && github.event.action == 'published' && github.repository == 'PanDAWMS/panda-client'
-      uses: pypa/gh-action-pypi-publish@v1.4.2
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      run: |
+        twine upload dist/*
